@@ -6,6 +6,7 @@ from datetime import datetime
 
 # Memuat dataset
 day_df = pd.read_csv('day.csv')
+hour_df = pd.read_csv('hour.csv')
 
 # Mengubah kolom 'dteday' menjadi tipe data datetime
 day_df['dteday'] = pd.to_datetime(day_df['dteday'])
@@ -33,36 +34,25 @@ season_data = filtered_data[filtered_data['season'] == season_filter]
 st.write(f"Data untuk musim: {['Spring', 'Summer', 'Fall', 'Winter'][season_filter - 1]}")
 st.write(season_data)
 
-# Filter berdasarkan cuaca
-weather_filter = st.selectbox('Select Weather Situation', options=[1, 2, 3], format_func=lambda x: ['Clear', 'Mist', 'Heavy Rain'][x-1])
-
-# Filter data berdasarkan cuaca
-weather_data = season_data[season_data['weathersit'] == weather_filter]
-
-# Menampilkan data yang difilter
-st.write(f"Data dengan kondisi cuaca: {['Clear', 'Mist', 'Heavy Rain'][weather_filter - 1]}")
-st.write(weather_data)
-
-# Visualisasi data yang difilter
-st.subheader('Visualization of Filtered Data')
-
-# Visualisasi Boxplot
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.boxplot(x='season', y='cnt', data=weather_data, palette='Set2', ax=ax)
-ax.set_title('Bike Sharing Count per Season (Filtered)')
+# Visualisasi Tren Penyewaan Sepeda Berdasarkan Jam
+st.subheader('Hourly Bike Rental Trend')
+hourly_trend = hour_df.groupby('hr')['cnt'].mean()
+fig, ax = plt.subplots(figsize=(10,5))
+ax.plot(hourly_trend.index, hourly_trend.values, marker='o', linestyle='-')
+ax.set_xlabel('Jam dalam Sehari')
+ax.set_ylabel('Rata-rata Jumlah Penyewaan')
+ax.set_title('Tren Penyewaan Sepeda Berdasarkan Jam')
+ax.set_xticks(range(24))
+ax.grid(True)
 st.pyplot(fig)
 
-# Visualisasi Barplot
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.barplot(x='season', y='cnt', data=weather_data, palette='Set2', ax=ax)
-ax.set_title('Average Bike Sharing Count per Season')
+# Visualisasi Korelasi Cuaca dan Penyewaan Sepeda
+st.subheader('Weather vs Bike Rental Correlation')
+fig, ax = plt.subplots(figsize=(8,6))
+sns.heatmap(day_df[['temp', 'hum', 'windspeed', 'cnt']].corr(), annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+ax.set_title("Korelasi antara Cuaca dan Penyewaan Sepeda")
 st.pyplot(fig)
-
-# Visualisasi Pairplot
-st.subheader('Pairplot of Filtered Data')
-sns.pairplot(weather_data[['cnt', 'temp', 'hum', 'windspeed']])
-st.pyplot()
 
 # Menampilkan statistik deskriptif dari data yang difilter
 st.subheader('Descriptive Statistics of Filtered Data')
-st.write(weather_data.describe())
+st.write(season_data.describe())
