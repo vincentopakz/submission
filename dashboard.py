@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Konfigurasi tampilan
-st.set_option('deprecation.showPyplotGlobalUse', False)
 sns.set(style="whitegrid")
 
 # Load Data
