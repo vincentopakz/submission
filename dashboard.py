@@ -1,44 +1,54 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
+from datetime import datetime
 
-# Load dataset
-day_df = pd.read_csv("day.csv")
+# Memuat dataset
+day_df = pd.read_csv('day.csv')
+
+# Mengubah kolom 'dteday' menjadi tipe data datetime
 day_df['dteday'] = pd.to_datetime(day_df['dteday'])
 
-# Sidebar filters
-st.sidebar.header("Filter Data")
-start_date = st.sidebar.date_input("Start Date", day_df['dteday'].min())
-end_date = st.sidebar.date_input("End Date", day_df['dteday'].max())
-season_filter = st.sidebar.multiselect("Select Season", day_df['season'].unique(), day_df['season'].unique())
-weather_filter = st.sidebar.multiselect("Select Weather", day_df['weathersit'].unique(), day_df['weathersit'].unique())
+# Menambahkan filter tanggal
+st.title("Bike Sharing Data Analysis")
 
-# Apply filters
-filtered_df = day_df[(day_df['dteday'] >= pd.to_datetime(start_date)) & (day_df['dteday'] <= pd.to_datetime(end_date))]
-filtered_df = filtered_df[filtered_df['season'].isin(season_filter) & filtered_df['weathersit'].isin(weather_filter)]
+start_date = st.date_input('Start Date', min_value=datetime(2011, 1, 1), max_value=datetime(2012, 12, 31))
+end_date = st.date_input('End Date', min_value=datetime(2011, 1, 1), max_value=datetime(2012, 12, 31))
 
-# Dashboard Title
-st.title("Rental Bike Analysis Dashboard")
+# Filter data berdasarkan tanggal
+filtered_data = day_df[(day_df['dteday'] >= pd.to_datetime(start_date)) & (day_df['dteday'] <= pd.to_datetime(end_date))]
 
-# Visualization: Pengaruh Cuaca terhadap Penyewaan Sepeda
-st.subheader("Pengaruh Cuaca terhadap Penyewaan Sepeda")
-fig, ax = plt.subplots(figsize=(8, 4))
-sns.boxplot(x=filtered_df['weathersit'], y=filtered_df['cnt'], ax=ax)
-ax.set_xlabel('Kondisi Cuaca')
-ax.set_ylabel('Jumlah Penyewaan Sepeda')
-st.pyplot(fig)
+# Menampilkan data yang difilter
+st.write(f"Data yang difilter antara {start_date} dan {end_date}")
+st.write(filtered_data)
 
-# Visualization: Tren Penyewaan Sepeda Berdasarkan Hari
-st.subheader("Tren Penyewaan Sepeda Berdasarkan Hari")
-filtered_df['day_of_week'] = filtered_df['dteday'].dt.day_name()
-rentals_by_day = filtered_df.groupby('day_of_week')['cnt'].mean().sort_values()
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.barplot(x=rentals_by_day.index, y=rentals_by_day, ax=ax)
-ax.set_xlabel('Hari dalam Seminggu')
-ax.set_ylabel('Rata-rata Penyewaan Sepeda')
-st.pyplot(fig)
+# Filter berdasarkan musim
+season_filter = st.selectbox('Select Season', options=[1, 2, 3, 4], format_func=lambda x: ['Spring', 'Summer', 'Fall', 'Winter'][x-1])
 
-# Show filtered dataset
-st.subheader("Filtered Data Preview")
-st.write(filtered_df.head())
+# Filter data berdasarkan musim
+season_data = filtered_data[filtered_data['season'] == season_filter]
+
+# Menampilkan data yang difilter
+st.write(f"Data untuk musim: {['Spring', 'Summer', 'Fall', 'Winter'][season_filter - 1]}")
+st.write(season_data)
+
+# Filter berdasarkan cuaca
+weather_filter = st.selectbox('Select Weather Situation', options=[1, 2, 3], format_func=lambda x: ['Clear', 'Mist', 'Heavy Rain'][x-1])
+
+# Filter data berdasarkan cuaca
+weather_data = season_data[season_data['weathersit'] == weather_filter]
+
+# Menampilkan data yang difilter
+st.write(f"Data dengan kondisi cuaca: {['Clear', 'Mist', 'Heavy Rain'][weather_filter - 1]}")
+st.write(weather_data)
+
+# Visualisasi data yang difilter
+st.subheader('Visualization of Filtered Data')
+sns.boxplot(x='season', y='cnt', data=weather_data, palette='Set2')
+plt.title('Bike Sharing Count per Season (Filtered)')
+st.pyplot()
+
+# Menampilkan statistik deskriptif dari data yang difilter
+st.subheader('Descriptive Statistics of Filtered Data')
+st.write(weather_data.describe())
