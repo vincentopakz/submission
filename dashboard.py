@@ -46,15 +46,22 @@ st.write(weather_data)
 # Visualisasi data yang difilter
 st.subheader('Visualization of Filtered Data')
 
-# Membuat figure dan axis secara eksplisit
+# Visualisasi Boxplot
 fig, ax = plt.subplots(figsize=(10, 6))
-
-# Plot boxplot
 sns.boxplot(x='season', y='cnt', data=weather_data, palette='Set2', ax=ax)
 ax.set_title('Bike Sharing Count per Season (Filtered)')
-
-# Menampilkan visualisasi
 st.pyplot(fig)
+
+# Visualisasi Barplot
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.barplot(x='season', y='cnt', data=weather_data, palette='Set2', ax=ax)
+ax.set_title('Average Bike Sharing Count per Season')
+st.pyplot(fig)
+
+# Visualisasi Pairplot
+st.subheader('Pairplot of Filtered Data')
+sns.pairplot(weather_data[['cnt', 'temp', 'hum', 'windspeed']])
+st.pyplot()
 
 # Menampilkan statistik deskriptif dari data yang difilter
 st.subheader('Descriptive Statistics of Filtered Data')
