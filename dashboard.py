@@ -4,55 +4,108 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-# Memuat dataset
+# ---------------------------
+# Load Data & Konversi Tanggal
+# ---------------------------
 day_df = pd.read_csv('day.csv')
 hour_df = pd.read_csv('hour.csv')
 
-# Mengubah kolom 'dteday' menjadi tipe data datetime
 day_df['dteday'] = pd.to_datetime(day_df['dteday'])
+hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
 
-# Menambahkan filter tanggal
+# ---------------------------
+# Judul Aplikasi
+# ---------------------------
 st.title("Bike Sharing Data Analysis")
 
-start_date = st.date_input('Start Date', min_value=datetime(2011, 1, 1), max_value=datetime(2012, 12, 31))
-end_date = st.date_input('End Date', min_value=datetime(2011, 1, 1), max_value=datetime(2012, 12, 31))
+# ---------------------------
+# Fitur Filtering Interaktif
+# ---------------------------
+# 1. Filter berdasarkan rentang tanggal untuk kedua dataset
+st.subheader("Filter Berdasarkan Tanggal")
+start_date = st.date_input(
+    'Start Date', 
+    value=datetime(2011, 1, 1), 
+    min_value=datetime(2011, 1, 1), 
+    max_value=datetime(2012, 12, 31)
+)
+end_date = st.date_input(
+    'End Date', 
+    value=datetime(2012, 12, 31), 
+    min_value=datetime(2011, 1, 1), 
+    max_value=datetime(2012, 12, 31)
+)
+
+# Pastikan end_date tidak lebih kecil dari start_date
+if start_date > end_date:
+    st.error("Start Date harus sebelum End Date!")
+    st.stop()
 
 # Filter data berdasarkan tanggal
-filtered_data = day_df[(day_df['dteday'] >= pd.to_datetime(start_date)) & (day_df['dteday'] <= pd.to_datetime(end_date))]
+filtered_day = day_df[(day_df['dteday'] >= pd.to_datetime(start_date)) &
+                      (day_df['dteday'] <= pd.to_datetime(end_date))]
+filtered_hour = hour_df[(hour_df['dteday'] >= pd.to_datetime(start_date)) &
+                        (hour_df['dteday'] <= pd.to_datetime(end_date))]
 
-# Menampilkan data yang difilter
-st.write(f"Data yang difilter antara {start_date} dan {end_date}")
-st.write(filtered_data)
+# 2. Filter berdasarkan musim (Season)
+st.subheader("Filter Berdasarkan Musim")
+# Opsi 0 berarti "All" (tidak difilter)
+season_filter = st.selectbox(
+    "Select Season", 
+    options=[0, 1, 2, 3, 4], 
+    format_func=lambda x: "All" if x == 0 else ['Spring', 'Summer', 'Fall', 'Winter'][x-1]
+)
+if season_filter != 0:
+    filtered_day = filtered_day[filtered_day['season'] == season_filter]
+    filtered_hour = filtered_hour[filtered_hour['season'] == season_filter]
 
-# Filter berdasarkan musim
-season_filter = st.selectbox('Select Season', options=[1, 2, 3, 4], format_func=lambda x: ['Spring', 'Summer', 'Fall', 'Winter'][x-1])
+# 3. Filter berdasarkan kondisi cuaca (weathersit)
+st.subheader("Filter Berdasarkan Kondisi Cuaca")
+weather_filter = st.selectbox(
+    "Select Weather Situation", 
+    options=[0, 1, 2, 3], 
+    format_func=lambda x: "All" if x == 0 else ['Clear', 'Mist', 'Heavy Rain'][x-1]
+)
+if weather_filter != 0:
+    filtered_day = filtered_day[filtered_day['weathersit'] == weather_filter]
+    filtered_hour = filtered_hour[filtered_hour['weathersit'] == weather_filter]
 
-# Filter data berdasarkan musim
-season_data = filtered_data[filtered_data['season'] == season_filter]
+# Tampilkan jumlah data yang tersisa setelah filtering
+st.write("Jumlah data (day dataset):", filtered_day.shape[0])
+st.write("Jumlah data (hour dataset):", filtered_hour.shape[0])
 
-# Menampilkan data yang difilter
-st.write(f"Data untuk musim: {['Spring', 'Summer', 'Fall', 'Winter'][season_filter - 1]}")
-st.write(season_data)
+# ---------------------------
+# Visualisasi: Hourly Bike Rental Trend
+# ---------------------------
+st.subheader("Hourly Bike Rental Trend")
+# Menghitung rata-rata penyewaan per jam dari dataset hour yang sudah difilter
+hourly_trend = filtered_hour.groupby('hr')['cnt'].mean()
 
-# Visualisasi Tren Penyewaan Sepeda Berdasarkan Jam
-st.subheader('Hourly Bike Rental Trend')
-hourly_trend = hour_df.groupby('hr')['cnt'].mean()
-fig, ax = plt.subplots(figsize=(10,5))
-ax.plot(hourly_trend.index, hourly_trend.values, marker='o', linestyle='-')
-ax.set_xlabel('Jam dalam Sehari')
-ax.set_ylabel('Rata-rata Jumlah Penyewaan')
-ax.set_title('Tren Penyewaan Sepeda Berdasarkan Jam')
-ax.set_xticks(range(24))
-ax.grid(True)
-st.pyplot(fig)
+fig1, ax1 = plt.subplots(figsize=(10, 5))
+ax1.plot(hourly_trend.index, hourly_trend.values, marker='o', linestyle='-')
+ax1.set_xlabel('Jam dalam Sehari')
+ax1.set_ylabel('Rata-rata Jumlah Penyewaan')
+ax1.set_title('Tren Penyewaan Sepeda Berdasarkan Jam')
+ax1.set_xticks(range(24))
+ax1.grid(True)
+st.pyplot(fig1)
 
-# Visualisasi Korelasi Cuaca dan Penyewaan Sepeda
-st.subheader('Weather vs Bike Rental Correlation')
-fig, ax = plt.subplots(figsize=(8,6))
-sns.heatmap(day_df[['temp', 'hum', 'windspeed', 'cnt']].corr(), annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
-ax.set_title("Korelasi antara Cuaca dan Penyewaan Sepeda")
-st.pyplot(fig)
+# ---------------------------
+# Visualisasi: Korelasi antara Cuaca dan Penyewaan Sepeda
+# ---------------------------
+st.subheader("Weather vs Bike Rental Correlation")
+# Pastikan data yang digunakan untuk korelasi memiliki jumlah baris > 0
+if filtered_day.shape[0] > 0:
+    fig2, ax2 = plt.subplots(figsize=(8, 6))
+    corr = filtered_day[['temp', 'hum', 'windspeed', 'cnt']].corr()
+    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", ax=ax2)
+    ax2.set_title("Korelasi antara Cuaca dan Penyewaan Sepeda")
+    st.pyplot(fig2)
+else:
+    st.write("Tidak ada data yang tersedia untuk periode dan filter yang dipilih.")
 
-# Menampilkan statistik deskriptif dari data yang difilter
-st.subheader('Descriptive Statistics of Filtered Data')
-st.write(season_data.describe())
+# ---------------------------
+# Statistik Deskriptif
+# ---------------------------
+st.subheader("Descriptive Statistics (Day Dataset)")
+st.write(filtered_day.describe())
